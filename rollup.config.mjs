@@ -1,7 +1,11 @@
 import json from '@rollup/plugin-json';
 import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 
+/**
+ * @type {import('rollup').RollupOptions}
+ */
 export default {
   input: 'src/index.ts',
   output: [
@@ -20,11 +24,13 @@ export default {
       file: 'dist/index.js',
       format: 'cjs',
       sourcemap: true,
-    }
+    },
   ],
+  external: ['react'],
   plugins: [
     json(),
     commonjs(),
     typescript({tsconfig: './tsconfig.json'}),
+    nodeResolve(),
   ],
 }
