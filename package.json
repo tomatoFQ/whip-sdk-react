@@ -1,0 +1,39 @@
+{
+  "name": "whip-sdk-react",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "rollup -c rollup.config.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tomatoFQ/whip-sdk-react.git"
+  },
+  "keywords": [
+    "WHIP",
+    "WTN",
+    "WebRTC"
+  ],
+  "author": "TAL Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tomatoFQ/whip-sdk-react/issues"
+  },
+  "homepage": "https://github.com/tomatoFQ/whip-sdk-react#readme",
+  "peerDependencies": {
+    "react": "^16.8.0"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^24.0.1",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-typescript": "^11.1.0",
+    "@types/react": "^16.8.0",
+    "rollup": "^3.20.2",
+    "tslib": "^2.5.0",
+    "typescript": "^5.0.4"
+  }
+}
