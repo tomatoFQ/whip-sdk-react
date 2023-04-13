@@ -63,7 +63,6 @@ export default class Publisher extends EventEmitter {
 
     await this.pc.setLocalDescription(offer);
     const { sdp, location } = await pushRequest({
-      Domain: 'openrtc.eaydu.com',
       AppID: this.appId,
       StreamID: this.streamId,
       token: this.token,
