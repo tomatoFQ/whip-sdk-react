@@ -3,7 +3,7 @@ import { TextEncoder } from 'web-encoding';
 import type {PushParameters} from '../src/request';
 import {pushRequest} from '../src/request';
 import {publishSDP} from './moke-sdp';
-import {AppID, AppKey, Domain} from './config';
+import {AppID, AppKey} from './config';
 
 
 const StreamID = '8b91567b-b7cc-4303-8a0f-309ea9fc43ef';
@@ -28,9 +28,7 @@ test('publish http request', async () => {
   const token = jwt.sign(payload, privateKey, {algorithm: 'HS256', noTimestamp: true});
   const requestData: PushParameters = {
     StreamID,
-    Domain,
     AppID,
-    AppKey,
     SessionID,
     token,
     sdp: publishSDP,

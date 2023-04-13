@@ -1,15 +1,14 @@
 import post from 'axios';
+import {v4 as uuid} from 'uuid';
 
+const Domain = 'openrtc.eaydu.com';
 export interface RequestParams {
-  Domain: string;
   AppID: string;
   StreamID: string;
-  SessionID: string;
+  SessionID?: string;
   sdp: string;
-  ClientIp?: string;
   MuteAudio?: boolean;
   MuteVideo?: boolean;
-  parameter?: string;
 }
 
 export interface ResponseParams {
@@ -27,34 +26,15 @@ export interface PullParameters extends RequestParams {
 
 // 推流请求
 export const pushRequest = ({
-                              Domain,
                               AppID,
                               StreamID,
                               token,
-                              SessionID,
+                              SessionID = uuid(),
                               sdp,
-                              ClientIp,
                               MuteAudio = false,
                               MuteVideo = false,
-                              parameter,
                             }: PushParameters): Promise<ResponseParams> => {
-  const arr: string[] = [];
-  parameter?.split("&").map((item) => {
-    if (
-      item.split("=")[0] !== "Domain" &&
-      item.split("=")[0] !== "AppID" &&
-      item.split("=")[0] !== "AppKey" &&
-      item.split("=")[0] !== "StreamID" &&
-      item.split("=")[0] !== ""
-    ) {
-      arr.push(`&${item}`);
-    }
-    return item;
-  });
-  const res = arr.join("");
-  const url = ClientIp
-    ? `https://${Domain}/pub/${AppID}/${StreamID}?SessionID=${SessionID}&ClientIP=${ClientIp}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}${res}`
-    : `https://${Domain}/pub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}${res}`;
+  const url = `https://${Domain}/pub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}`;
   return post(url, {
     method: "POST",
     headers: {
@@ -75,17 +55,13 @@ export const pushRequest = ({
 
 // 拉流请求
 export const pullRequest = ({
-                              Domain,
                               AppID,
                               StreamID,
                               token,
-                              SessionID,
+                              SessionID = uuid(),
                               sdp,
                               MuteAudio,
                               MuteVideo,
-                              ClientIp,
-                              // ip,
-                              parameter,
                             }: PullParameters): Promise<ResponseParams> => {
   const requestInit: any = {
     method: "POST",
@@ -97,25 +73,7 @@ export const pullRequest = ({
   if (token) {
     requestInit.headers.Authorization = `Bearer ${  token}`;
   }
-  const arr: string[] = [];
-  parameter?.split("&").map((item) => {
-    if (
-      item.split("=")[0] !== "mode" &&
-      item.split("=")[0] !== "Domain" &&
-      item.split("=")[0] !== "AppID" &&
-      item.split("=")[0] !== "AppKey" &&
-      item.split("=")[0] !== "StreamID" &&
-      item.split("=")[0] !== "" &&
-      item.split("=")[1] !== ""
-    ) {
-      arr.push(`&${  item}`);
-    }
-    return item;
-  });
-  const res = arr.join("");
-  const url = ClientIp
-    ? `https://${Domain}/sub/${AppID}/${StreamID}?SessionID=${SessionID}&ClientIP=${ClientIp}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}${res}`
-    : `https://${Domain}/sub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}${res}`;
+  const url = `https://${Domain}/sub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}`;
   return post(url, requestInit).then(async (r) => {
     if (r.status !== 201) {
       const b = r.status;
