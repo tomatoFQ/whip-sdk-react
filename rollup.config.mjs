@@ -20,7 +20,7 @@ export default {
       sourcemap: true,
     },
   ],
-  external: ['react'],
+  external: ['react', 'axios', 'jsonwebtoken'],
   plugins: [
     json(),
     commonjs(),
