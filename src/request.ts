@@ -1,5 +1,3 @@
-
-
 import post from 'axios';
 
 export interface RequestParams {
@@ -37,8 +35,8 @@ export const pushRequest = ({
                               SessionID,
                               sdp,
                               ClientIp,
-                              MuteAudio,
-                              MuteVideo,
+                              MuteAudio = false,
+                              MuteVideo = false,
                               parameter,
                             }: PushParameters): Promise<ResponseParams> => {
   const arr: string[] = [];
@@ -71,8 +69,7 @@ export const pushRequest = ({
       throw new Error(`${r.data  } 错误码：${  code}`);
     }
     const answerSdp = await r.data;
-    // const location = r.headers.get("location");
-    const location = 'r.headers.get("location")';
+    const {location} = r.headers;
     return { sdp: answerSdp, location } as ResponseParams;
   });
 };
@@ -126,8 +123,7 @@ export const pullRequest = ({
       throw new Error(`${r.data  } 错误码：${  b}`);
     }
     const answerSdp = await r.data;
-    // const location = r.headers.get("location");
-    const location = 'r.headers.get("location")';
+    const {location} = r.headers;
     return { sdp: answerSdp, location } as ResponseParams;
   });
 };

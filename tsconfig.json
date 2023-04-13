@@ -4,9 +4,11 @@
     "module": "ESNext",
     "lib": [
       "es2016",
-      "dom",
+      "dom"
     ],
     "declaration": true,
     "declarationDir": "types",
-  }
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "NodeNext"
+  },
 }

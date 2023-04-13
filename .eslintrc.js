@@ -11,6 +11,7 @@ module.exports = {
     browser: true,
     node: true,
     es6: true,
+    jest: true,
   },
   settings: {
     react: {
@@ -22,7 +23,7 @@ module.exports = {
     },
   },
   parser: '@typescript-eslint/parser',
-  plugins: ['react', '@typescript-eslint', 'react-hooks', 'markdown'],
+  plugins: ['react', '@typescript-eslint', 'jest', 'react-hooks', 'markdown'],
   // https://github.com/typescript-eslint/typescript-eslint/issues/46#issuecomment-470486034
   overrides: [
     {
@@ -84,6 +85,14 @@ module.exports = {
     // ban this for Number.isNaN needs polyfill
     'no-restricted-globals': 0,
     'max-classes-per-file': 0,
+
+    'jest/no-test-callback': 0,
+    'jest/expect-expect': 0,
+    'jest/no-done-callback': 0,
+    'jest/valid-title': 0,
+    'jest/no-conditional-expect': 0,
+    'jest/no-standalone-expect': 0,
+
     // https://github.com/typescript-eslint/typescript-eslint/issues/2540#issuecomment-692866111
     'no-use-before-define': 0,
     '@typescript-eslint/no-use-before-define': 2,
