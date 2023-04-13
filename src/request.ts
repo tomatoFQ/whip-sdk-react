@@ -3,7 +3,6 @@ import post from 'axios';
 export interface RequestParams {
   Domain: string;
   AppID: string;
-  AppKey: string | undefined;
   StreamID: string;
   SessionID: string;
   sdp: string;
