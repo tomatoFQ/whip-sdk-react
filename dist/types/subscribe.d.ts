@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { EventEmitter } from 'events';
-export default class Publisher extends EventEmitter {
-    constructor(audio: MediaStreamTrack, video: MediaStreamTrack, token: string);
+export default class Subscribe extends EventEmitter {
+    constructor(token: string);
     pc: RTCPeerConnection;
     appId: string;
     streamId: string;
@@ -14,7 +14,7 @@ export default class Publisher extends EventEmitter {
     location?: string;
     get state(): RTCPeerConnectionState;
     createRTCPeerConnection(): void;
-    publish(): Promise<void>;
-    unpublish(): Promise<void>;
+    subscribe(): Promise<void>;
+    unsubscribe(): Promise<void>;
     mute(muted: boolean, kind?: 'audio' | 'video'): Promise<void>;
 }
