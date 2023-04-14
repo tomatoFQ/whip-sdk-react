@@ -3,7 +3,7 @@ import { decode } from 'jsonwebtoken';
 import { deleteRequest, pushRequest, updateRequest } from './request';
 
 export default class Publisher extends EventEmitter {
-  constructor(token: string, audio: MediaStreamTrack, video: MediaStreamTrack) {
+  constructor(audio: MediaStreamTrack, video: MediaStreamTrack, token: string) {
     super();
     const { appId, streamId } = decode(token) as { appId: string, streamId: string };
     this.streamId = streamId;
@@ -109,5 +109,7 @@ export default class Publisher extends EventEmitter {
       MuteAudio: this.audioMuted,
       MuteVideo: this.videoMuted,
     })
+
+    this.emit('muteChanged')
   }
 }
