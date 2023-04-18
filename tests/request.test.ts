@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { TextEncoder } from 'web-encoding';
 import type {PushParameters} from '../src/request';
 import {pullRequest, pushRequest} from '../src/request';
