@@ -57,7 +57,7 @@ export default class Subscribe extends EventEmitter {
           this.video = evt.track;
         }
       }
-      this.emit.call(this.pc,'track', evt);
+      this.emit.call(this.pc,'track', evt.track);
     });
 
     this.subscribe();

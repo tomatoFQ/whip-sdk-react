@@ -1,7 +1,7 @@
 import post from 'axios';
 import {v4 as uuid} from 'uuid';
 
-const Domain = 'openrtc.eaydu.com';
+const Domain = 'test-openrtc.eaydu.com';
 export interface RequestParams {
   AppID: string;
   StreamID: string;
@@ -34,7 +34,7 @@ export const pushRequest = ({
                               MuteAudio = false,
                               MuteVideo = false,
                             }: PushParameters): Promise<ResponseParams> => {
-  const url = `https://${Domain}/pub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}`;
+  const url = `https://${Domain}/pub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}&ServerIP=47.94.244.188`;
   return post(url, {
     method: "POST",
     headers: {
@@ -60,20 +60,21 @@ export const pullRequest = ({
                               token,
                               SessionID = uuid(),
                               sdp,
-                              MuteAudio,
-                              MuteVideo,
+                              MuteAudio = false,
+                              MuteVideo = false,
                             }: PullParameters): Promise<ResponseParams> => {
+
   const requestInit: any = {
     method: "POST",
     headers: {
       "Content-Type": "application/sdp",
     },
-    body: sdp,
+    data: sdp,
   };
   if (token) {
-    requestInit.headers.Authorization = `Bearer ${  token}`;
+    requestInit.headers.Authorization = `Bearer ${token}`;
   }
-  const url = `https://${Domain}/sub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}`;
+  const url = `https://${Domain}/sub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}&ServerIP=47.94.244.188`;
   return post(url, requestInit).then(async (r) => {
     if (r.status !== 201) {
       const b = r.status;
