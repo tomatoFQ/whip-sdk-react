@@ -66,7 +66,6 @@ export default class Publisher extends EventEmitter {
       AppID: this.appId,
       StreamID: this.streamId,
       token: this.token,
-      SessionID: '',
       sdp: offer.sdp,
     })
     await this.pc.setRemoteDescription(
