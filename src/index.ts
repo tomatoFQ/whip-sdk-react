@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import Publisher from './publish';
 
-export function usePublish() {
+export interface PublishHook {
+  audioMuted: boolean;
+  videoMuted: boolean;
+  peerconnection: RTCPeerConnection;
+  init: typeof Publisher.prototype.init;
+  publish: typeof Publisher.prototype.publish;
+  mute: typeof Publisher.prototype.mute;
+  delete: typeof Publisher.prototype.unpublish;
+}
+export function usePublish(): PublishHook {
 
   const publisher = new Publisher();
   const [audioMuted, setAudioMuted] = useState(publisher.audioMuted);
