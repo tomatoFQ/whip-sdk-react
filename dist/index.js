@@ -242,7 +242,7 @@ function usePublish() {
         init: publisher.init.bind(publisher),
         publish: publisher.publish.bind(publisher),
         mute: publisher.mute.bind(publisher),
-        delete: publisher.unpublish.bind(publisher)
+        unpublish: publisher.unpublish.bind(publisher)
     };
 }
 

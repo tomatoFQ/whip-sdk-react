@@ -6,6 +6,6 @@ export interface PublishHook {
     init: typeof Publisher.prototype.init;
     publish: typeof Publisher.prototype.publish;
     mute: typeof Publisher.prototype.mute;
-    delete: typeof Publisher.prototype.unpublish;
+    unpublish: typeof Publisher.prototype.unpublish;
 }
 export declare function usePublish(): PublishHook;
