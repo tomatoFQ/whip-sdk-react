@@ -8,7 +8,7 @@ export interface PublishHook {
   init: typeof Publisher.prototype.init;
   publish: typeof Publisher.prototype.publish;
   mute: typeof Publisher.prototype.mute;
-  delete: typeof Publisher.prototype.unpublish;
+  unpublish: typeof Publisher.prototype.unpublish;
 }
 export function usePublish(): PublishHook {
 
@@ -28,6 +28,6 @@ export function usePublish(): PublishHook {
     init: publisher.init.bind(publisher),
     publish: publisher.publish.bind(publisher),
     mute: publisher.mute.bind(publisher),
-    delete: publisher.unpublish.bind(publisher)
+    unpublish: publisher.unpublish.bind(publisher)
   };
 }
