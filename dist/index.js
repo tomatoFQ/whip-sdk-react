@@ -2,7 +2,7 @@
 
 var react = require('react');
 var events = require('events');
-var jsonwebtoken = require('jsonwebtoken');
+var jose = require('jose');
 var post = require('axios');
 
 /******************************************************************************
@@ -95,10 +95,10 @@ function v4(options, buf, offset) {
   return unsafeStringify(rnds);
 }
 
-const Domain = 'openrtc.eaydu.com';
+const Domain = 'test-openrtc.eaydu.com';
 // 推流请求
 const pushRequest = ({ AppID, StreamID, token, SessionID = v4(), sdp, MuteAudio = false, MuteVideo = false, }) => {
-    const url = `https://${Domain}/pub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}`;
+    const url = `https://${Domain}/pub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}&ServerIP=47.94.244.188`;
     return post(url, {
         method: "POST",
         headers: {
@@ -140,7 +140,7 @@ class Publisher extends events.EventEmitter {
         super();
         this.audioMuted = false;
         this.videoMuted = false;
-        const { appId, streamId } = jsonwebtoken.decode(token);
+        const { appId, streamId } = jose.decodeJwt(token);
         this.streamId = streamId;
         this.appId = appId;
         this.token = token;
@@ -176,7 +176,6 @@ class Publisher extends events.EventEmitter {
                 AppID: this.appId,
                 StreamID: this.streamId,
                 token: this.token,
-                SessionID: '',
                 sdp: offer.sdp,
             });
             yield this.pc.setRemoteDescription(new RTCSessionDescription({
