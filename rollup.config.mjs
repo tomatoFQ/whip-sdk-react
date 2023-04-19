@@ -20,11 +20,13 @@ export default {
       sourcemap: true,
     },
   ],
-  external: ['react', 'axios', 'jsonwebtoken'],
+  external: ['react', 'axios', 'jose'],
   plugins: [
     json(),
     commonjs(),
     typescript({tsconfig: './tsconfig.json'}),
-    nodeResolve(),
+    nodeResolve({
+      browser: true
+    }),
   ],
 }

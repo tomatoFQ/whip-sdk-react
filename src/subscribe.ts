@@ -1,11 +1,11 @@
 import { EventEmitter } from 'events';
-import { decode } from 'jsonwebtoken';
+import { decodeJwt } from 'jose';
 import {deleteRequest, pullRequest, updateRequest} from './request';
 
 export default class Subscribe extends EventEmitter {
   constructor(token: string) {
     super();
-    const { appId, streamId } = decode(token) as { appId: string, streamId: string };
+    const { appId, streamId } = decodeJwt(token) as { appId: string, streamId: string };
     this.streamId = streamId;
     this.appId = appId;
     this.token = token;
