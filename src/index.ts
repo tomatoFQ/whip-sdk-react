@@ -1,16 +1,11 @@
 import { useState } from 'react';
 import Publisher from './publish';
 
-export function usePublish(audio: MediaStreamTrack, video: MediaStreamTrack, token: string) {
+export function usePublish() {
 
-  const publisher = new Publisher(audio, video, token);
-  const [state, setState] = useState(publisher.state);
+  const publisher = new Publisher();
   const [audioMuted, setAudioMuted] = useState(publisher.audioMuted);
   const [videoMuted, setVideoMuted] = useState(publisher.videoMuted);
-
-  publisher.on('connectionstatechange', () => {
-    setState(publisher.state);
-  });
 
   publisher.on('muteChanged', () => {
     setAudioMuted(publisher.audioMuted);
@@ -18,9 +13,11 @@ export function usePublish(audio: MediaStreamTrack, video: MediaStreamTrack, tok
   });
 
   return { 
-    state,
     audioMuted,
     videoMuted,
+    peerconnection: publisher.pc,
+    init: publisher.init.bind(publisher),
+    publish: publisher.publish.bind(publisher),
     mute: publisher.mute.bind(publisher),
     delete: publisher.unpublish.bind(publisher)
   };

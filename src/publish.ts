@@ -3,42 +3,9 @@ import { decodeJwt } from 'jose';
 import { deleteRequest, pushRequest, updateRequest } from './request';
 
 export default class Publisher extends EventEmitter {
-  constructor(audio: MediaStreamTrack, video: MediaStreamTrack, token: string) {
+  constructor() {
     super();
-    const { appId, streamId } = decodeJwt(token) as { appId: string, streamId: string };
-    this.streamId = streamId;
-    this.appId = appId;
-    this.token = token;
-    this.audio = audio;
-    this.video = video;
-    this.createRTCPeerConnection();
-  }
-
-  pc: RTCPeerConnection;
-
-  appId: string;
-
-  streamId: string;
-
-  token: string;
-
-  audio: MediaStreamTrack;
-
-  video: MediaStreamTrack;
-
-  audioMuted: boolean = false;
-
-  videoMuted: boolean = false;
-
-  sessionId: string;
-
-  location?: string;
-
-  get state(): RTCPeerConnectionState {
-    return this.pc.connectionState;
-  }
-
-  createRTCPeerConnection() {
+    this.mediaStream = new MediaStream();
     this.pc = new RTCPeerConnection({
       iceServers: [],
       iceTransportPolicy: "all",
@@ -47,18 +14,59 @@ export default class Publisher extends EventEmitter {
       // @ts-ignore
       sdpSemantics: "unified-plan",
     });
-    this.pc.addTransceiver(this.audio, { direction: 'sendonly' });
-    this.pc.addTransceiver(this.video, { direction: 'sendonly' });
 
     this.pc.addEventListener('connectionstatechange', this.emit.bind(this.pc));
-
-    this.publish();
   }
 
-  async publish() {
-    if (this.pc.connectionState !== 'new') {
-      throw new Error('Already published.')
+  pc: RTCPeerConnection;
+
+  appId?: string;
+
+  streamId?: string;
+
+  token?: string;
+
+  mediaStream: MediaStream;
+
+  audio?: MediaStreamTrack;
+
+  video?: MediaStreamTrack;
+
+  audioMuted: boolean = false;
+
+  videoMuted: boolean = false;
+
+  sessionId?: string;
+
+  location?: string;
+
+  get canPublish() {
+    return this.appId && this.streamId && this.token && this.pc.connectionState === 'new';
+  }
+
+  async init(token: string) {
+    const { appId, streamId } = decodeJwt(token) as { appId: string, streamId: string };
+    this.streamId = streamId;
+    this.appId = appId;
+    this.token = token;
+    this.pc.addTransceiver('audio', { direction: 'sendonly', streams: [this.mediaStream] });
+    this.pc.addTransceiver('video', { direction: 'sendonly', streams: [this.mediaStream] });
+  }
+
+  async publish(audio: MediaStreamTrack, video: MediaStreamTrack) {
+    if (!this.canPublish) {
+      throw new Error('Publisher is not ready.')
     }
+    if (!audio) {
+      throw new Error('Audio track is required.')
+    }
+    if (!video) {
+      throw new Error('Video track is required.')
+    }
+
+    this.mediaStream.addTrack(audio);
+    this.mediaStream.addTrack(video);
+
     const offer = await this.pc.createOffer();
 
     await this.pc.setLocalDescription(offer);
@@ -89,6 +97,8 @@ export default class Publisher extends EventEmitter {
     await deleteRequest(this.location);
     this.location = undefined;
     this.pc.close();
+    this.mediaStream.removeTrack(this.audio);
+    this.mediaStream.removeTrack(this.video);
   }
 
   async mute(muted: boolean, kind?: 'audio' | 'video') {
