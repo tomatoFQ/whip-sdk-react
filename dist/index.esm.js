@@ -154,9 +154,9 @@ class Publisher extends EventEmitter {
     }
     init(token) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { appId, streamId } = decodeJwt(token);
-            this.streamId = streamId;
-            this.appId = appId;
+            const { AppID, StreamID } = decodeJwt(token);
+            this.streamId = StreamID;
+            this.appId = AppID;
             this.token = token;
             this.pc.addTransceiver('audio', { direction: 'sendonly', streams: [this.mediaStream] });
             this.pc.addTransceiver('video', { direction: 'sendonly', streams: [this.mediaStream] });

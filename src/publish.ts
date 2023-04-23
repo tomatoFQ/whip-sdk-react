@@ -45,9 +45,9 @@ export default class Publisher extends EventEmitter {
   }
 
   async init(token: string) {
-    const { appId, streamId } = decodeJwt(token) as { appId: string, streamId: string };
-    this.streamId = streamId;
-    this.appId = appId;
+    const { AppID, StreamID } = decodeJwt(token) as { AppID: string, StreamID: string };
+    this.streamId = StreamID;
+    this.appId = AppID;
     this.token = token;
     this.pc.addTransceiver('audio', { direction: 'sendonly', streams: [this.mediaStream] });
     this.pc.addTransceiver('video', { direction: 'sendonly', streams: [this.mediaStream] });

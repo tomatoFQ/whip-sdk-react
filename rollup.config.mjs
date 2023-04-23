@@ -17,6 +17,14 @@ export default {
       file: 'dist/index.esm.js',
       format: 'esm',
       sourcemap: true,
+      plugins: [
+        isWatch && WTN_DEMO_PATH && copy({
+          targets: [{ src: 'dist/**/*', dest: path.resolve(WTN_DEMO_PATH, 'node_modules/whip-sdk-react/dist') }],
+          verbose: true,
+          hook: 'writeBundle',
+          
+        })
+      ],
     },
     {
       file: 'dist/index.js',
@@ -32,9 +40,5 @@ export default {
     nodeResolve({
       browser: true
     }),
-    isWatch && WTN_DEMO_PATH && copy({
-      targets: [{ src: 'dist/**/*', dest: path.resolve(WTN_DEMO_PATH, 'node_modules/whip-sdk-react/dist') }],
-      verbose: true,
-    })
   ],
 }
