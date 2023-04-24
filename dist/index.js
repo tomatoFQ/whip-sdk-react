@@ -136,36 +136,35 @@ const updateRequest = (location, config) => __awaiter(void 0, void 0, void 0, fu
 });
 
 class Publisher extends events.EventEmitter {
-    constructor() {
+    constructor(token) {
         super();
         this.audioMuted = false;
         this.videoMuted = false;
-        this.mediaStream = new MediaStream();
-        this.pc = new RTCPeerConnection({
-            iceServers: [],
-            iceTransportPolicy: "all",
-            bundlePolicy: "max-bundle",
-            rtcpMuxPolicy: "require",
-            // @ts-ignore
-            sdpSemantics: "unified-plan",
-        });
-        this.pc.addEventListener('connectionstatechange', this.emit.bind(this.pc));
+        this.token = token;
     }
     get canPublish() {
-        return this.appId && this.streamId && this.token && this.pc.connectionState === 'new';
+        return this.appId && this.streamId && this.token && this.mediaStream && this.pc && this.pc.connectionState === 'new';
     }
-    init(token) {
+    init() {
         return __awaiter(this, void 0, void 0, function* () {
-            const { AppID, StreamID } = jose.decodeJwt(token);
-            this.streamId = StreamID;
-            this.appId = AppID;
-            this.token = token;
-            this.pc.addTransceiver('audio', { direction: 'sendonly', streams: [this.mediaStream] });
-            this.pc.addTransceiver('video', { direction: 'sendonly', streams: [this.mediaStream] });
+            const { appID, streamID } = jose.decodeJwt(this.token);
+            this.streamId = streamID;
+            this.appId = appID;
+            this.mediaStream = new MediaStream();
+            this.pc = new RTCPeerConnection({
+                iceServers: [],
+                iceTransportPolicy: "all",
+                bundlePolicy: "max-bundle",
+                rtcpMuxPolicy: "require",
+                // @ts-ignore
+                sdpSemantics: "unified-plan",
+            });
+            this.pc.addEventListener('connectionstatechange', this.emit.bind(this.pc));
         });
     }
     publish(audio, video) {
         return __awaiter(this, void 0, void 0, function* () {
+            yield this.init();
             if (!this.canPublish) {
                 throw new Error('Publisher is not ready.');
             }
@@ -175,8 +174,12 @@ class Publisher extends events.EventEmitter {
             if (!video) {
                 throw new Error('Video track is required.');
             }
+            this.audio = audio;
+            this.video = video;
             this.mediaStream.addTrack(audio);
             this.mediaStream.addTrack(video);
+            this.pc.addTransceiver(audio, { direction: 'sendonly', streams: [this.mediaStream] });
+            this.pc.addTransceiver(video, { direction: 'sendonly', streams: [this.mediaStream] });
             const offer = yield this.pc.createOffer();
             yield this.pc.setLocalDescription(offer);
             const { sdp, location } = yield pushRequest({
@@ -205,6 +208,7 @@ class Publisher extends events.EventEmitter {
             this.pc.close();
             this.mediaStream.removeTrack(this.audio);
             this.mediaStream.removeTrack(this.video);
+            this.mediaStream = undefined;
         });
     }
     mute(muted, kind) {
@@ -227,10 +231,13 @@ class Publisher extends events.EventEmitter {
     }
 }
 
-function usePublish() {
-    const publisher = new Publisher();
+function usePublish(token) {
+    const publisher = react.useRef(new Publisher(token)).current;
     const [audioMuted, setAudioMuted] = react.useState(publisher.audioMuted);
     const [videoMuted, setVideoMuted] = react.useState(publisher.videoMuted);
+    const publish = react.useRef(publisher.publish.bind(publisher)).current;
+    const mute = react.useRef(publisher.mute.bind(publisher)).current;
+    const unpublish = react.useRef(publisher.unpublish.bind(publisher)).current;
     publisher.on('muteChanged', () => {
         setAudioMuted(publisher.audioMuted);
         setVideoMuted(publisher.videoMuted);
@@ -238,11 +245,10 @@ function usePublish() {
     return {
         audioMuted,
         videoMuted,
-        peerconnection: publisher.pc,
-        init: publisher.init.bind(publisher),
-        publish: publisher.publish.bind(publisher),
-        mute: publisher.mute.bind(publisher),
-        unpublish: publisher.unpublish.bind(publisher)
+        publish,
+        mute,
+        unpublish,
+        getPeerConnection: () => publisher.pc
     };
 }
 
