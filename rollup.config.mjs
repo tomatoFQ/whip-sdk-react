@@ -32,7 +32,7 @@ export default {
       sourcemap: true,
     },
   ],
-  external: ['react', 'axios', 'jose'],
+  external: ['react', 'axios'],
   plugins: [
     json(),
     commonjs(),

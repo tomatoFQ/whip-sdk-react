@@ -1,4 +1,4 @@
-import * as jwt from 'jsonwebtoken';
+import { SignJWT } from 'jose';
 import { TextEncoder } from 'web-encoding';
 import type {PushParameters} from '../src/request';
 import {pullRequest, pushRequest} from '../src/request';
@@ -25,7 +25,10 @@ test('publish http request', async () => {
     enableSubAuth: true,
   };
 
-  const token = jwt.sign(payload, privateKey, {algorithm: 'HS256', noTimestamp: true});
+  const token = await new SignJWT(payload).setProtectedHeader({
+    alg: 'HS256',
+    typ: "JWT",
+  }).sign(privateKey);
   const requestData: PushParameters = {
     StreamID,
     AppID,
@@ -53,7 +56,10 @@ test('subscribe http request', async () => {
     enableSubAuth: true,
   };
 
-  const token = jwt.sign(payload, privateKey, {algorithm: 'HS256', noTimestamp: true});
+  const token = await new SignJWT(payload).setProtectedHeader({
+    alg: 'HS256',
+    typ: "JWT",
+  }).sign(privateKey);
   const requestData: PushParameters = {
     StreamID,
     AppID,

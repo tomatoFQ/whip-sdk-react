@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Publisher from './publish';
 import Subscribe from './subscribe';
 
@@ -47,6 +47,17 @@ export function useSubscribe(Token: string) {
   const [videoTrack, setVideoTrack] = useState<MediaStreamTrack>();
   const [audioTrack, setAudioTrack] = useState<MediaStreamTrack>();
 
+  const stop = useCallback(() => {
+    if (subscriber) {
+      subscriber.unsubscribe();
+    }
+  }, [subscriber]);
+
+
+  const mute = (isMute: boolean, kind: 'video' | 'audio') => {
+    subscriber.mute(isMute, kind);
+  };
+
   const handleSubscribe = useCallback((track: MediaStreamTrack) => {
     if (track.kind === 'video') {
       setVideoTrack(track)
@@ -55,25 +66,18 @@ export function useSubscribe(Token: string) {
     }
   }, [])
 
-  const handleConnectionState = (peerConnectionState: RTCPeerConnectionState) => {
+  const handleConnectionState = useCallback((peerConnectionState: RTCPeerConnectionState) => {
     setState(peerConnectionState);
-  }
+  }, [state]);
 
-  const stop = () => {
-    subscriber.unsubscribe();
-  };
+  useEffect(() => {
+    const subscribe = new Subscribe(Token);
+    subscribe.addListener('track', handleSubscribe);
+    subscribe.addListener('connectionstatechange', handleConnectionState);
+    setSubscriber(subscribe);
+  }, [Token]);
 
-  const mute = (isMute: boolean, kind: 'video' | 'audio') => {
-    // TODO add lock
-    subscriber.mute(isMute, kind);
-  };
 
-  useMemo(() => {
-    setSubscriber(new Subscribe(Token));
-    subscriber.addListener('track', handleSubscribe);
-    subscriber.addListener('connectionstatechange', handleConnectionState);
-    return () => subscriber.unsubscribe();
-  }, []);
 
   return {videoTrack, audioTrack, state, mute, stop} as Subscriber;
 }

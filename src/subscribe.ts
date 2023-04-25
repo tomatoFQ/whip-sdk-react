@@ -5,9 +5,9 @@ import {deleteRequest, pullRequest, updateRequest} from './request';
 export default class Subscribe extends EventEmitter {
   constructor(token: string) {
     super();
-    const { appId, streamId } = decodeJwt(token) as { appId: string, streamId: string };
-    this.streamId = streamId;
-    this.appId = appId;
+    const { appID, streamID } = decodeJwt(token) as { appID: string, streamID: string };
+    this.streamId = streamID;
+    this.appId = appID;
     this.token = token;
     this.createRTCPeerConnection();
   }
@@ -45,8 +45,8 @@ export default class Subscribe extends EventEmitter {
       // @ts-ignore
       sdpSemantics: "unified-plan",
     });
-    this.pc.addTransceiver(this.audio, { direction: 'recvonly' });
-    this.pc.addTransceiver(this.video, { direction: 'recvonly' });
+    this.pc.addTransceiver( 'audio', { direction: 'recvonly' });
+    this.pc.addTransceiver('video', { direction: 'recvonly' });
 
     this.pc.addEventListener('connectionstatechange', this.emit.bind(this.pc));
     this.pc.addEventListener('track', (evt: RTCTrackEvent) => {
@@ -57,7 +57,7 @@ export default class Subscribe extends EventEmitter {
           this.video = evt.track;
         }
       }
-      this.emit.call(this.pc,'track', evt.track);
+      this.emit('track', evt.track);
     });
 
     this.subscribe();
