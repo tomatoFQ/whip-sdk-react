@@ -29,7 +29,7 @@ export function usePublish(token: string): PublishHook {
     publish,
     mute,
     unpublish,
-    getPeerConnection: () => publisher.pc
+    getPeerConnection: () => publisher.pc,
   };
 }
 

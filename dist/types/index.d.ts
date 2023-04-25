@@ -8,3 +8,11 @@ export interface PublishHook {
     getPeerConnection: () => RTCPeerConnection;
 }
 export declare function usePublish(token: string): PublishHook;
+export interface Subscriber {
+    videoTrack: MediaStreamTrack;
+    audioTrack: MediaStreamTrack;
+    state: RTCPeerConnectionState;
+    mute: Function;
+    stop: Function;
+}
+export declare function useSubscribe(Token: string): Subscriber;

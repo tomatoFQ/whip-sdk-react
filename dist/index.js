@@ -2,7 +2,6 @@
 
 var react = require('react');
 var events = require('events');
-var jose = require('jose');
 var post = require('axios');
 
 /******************************************************************************
@@ -28,6 +27,101 @@ function __awaiter(thisArg, _arguments, P, generator) {
         function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
+}
+
+new TextEncoder();
+const decoder = new TextDecoder();
+
+const decodeBase64 = (encoded) => {
+    const binary = atob(encoded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+};
+const decode$1 = (input) => {
+    let encoded = input;
+    if (encoded instanceof Uint8Array) {
+        encoded = decoder.decode(encoded);
+    }
+    encoded = encoded.replace(/-/g, '+').replace(/_/g, '/').replace(/\s/g, '');
+    try {
+        return decodeBase64(encoded);
+    }
+    catch (_a) {
+        throw new TypeError('The input to be decoded is not correctly encoded.');
+    }
+};
+
+class JOSEError extends Error {
+    static get code() {
+        return 'ERR_JOSE_GENERIC';
+    }
+    constructor(message) {
+        var _a;
+        super(message);
+        this.code = 'ERR_JOSE_GENERIC';
+        this.name = this.constructor.name;
+        (_a = Error.captureStackTrace) === null || _a === void 0 ? void 0 : _a.call(Error, this, this.constructor);
+    }
+}
+class JWTInvalid extends JOSEError {
+    constructor() {
+        super(...arguments);
+        this.code = 'ERR_JWT_INVALID';
+    }
+    static get code() {
+        return 'ERR_JWT_INVALID';
+    }
+}
+
+function isObjectLike(value) {
+    return typeof value === 'object' && value !== null;
+}
+function isObject(input) {
+    if (!isObjectLike(input) || Object.prototype.toString.call(input) !== '[object Object]') {
+        return false;
+    }
+    if (Object.getPrototypeOf(input) === null) {
+        return true;
+    }
+    let proto = input;
+    while (Object.getPrototypeOf(proto) !== null) {
+        proto = Object.getPrototypeOf(proto);
+    }
+    return Object.getPrototypeOf(input) === proto;
+}
+
+const decode = decode$1;
+
+function decodeJwt(jwt) {
+    if (typeof jwt !== 'string')
+        throw new JWTInvalid('JWTs must use Compact JWS serialization, JWT must be a string');
+    const { 1: payload, length } = jwt.split('.');
+    if (length === 5)
+        throw new JWTInvalid('Only JWTs using Compact JWS serialization can be decoded');
+    if (length !== 3)
+        throw new JWTInvalid('Invalid JWT');
+    if (!payload)
+        throw new JWTInvalid('JWTs must contain a payload');
+    let decoded;
+    try {
+        decoded = decode(payload);
+    }
+    catch (_a) {
+        throw new JWTInvalid('Failed to parse the base64url encoded payload');
+    }
+    let result;
+    try {
+        result = JSON.parse(decoder.decode(decoded));
+    }
+    catch (_b) {
+        throw new JWTInvalid('Failed to parse the decoded payload as JSON');
+    }
+    if (!isObject(result))
+        throw new JWTInvalid('Invalid JWT Claims Set');
+    return result;
 }
 
 // Unique ID creation requires a high quality random # generator. In the browser we therefore
@@ -116,6 +210,29 @@ const pushRequest = ({ AppID, StreamID, token, SessionID = v4(), sdp, MuteAudio 
         return { sdp: answerSdp, location };
     }));
 };
+// 拉流请求
+const pullRequest = ({ AppID, StreamID, token, SessionID = v4(), sdp, MuteAudio = false, MuteVideo = false, }) => {
+    const requestInit = {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/sdp",
+        },
+        data: sdp,
+    };
+    if (token) {
+        requestInit.headers.Authorization = `Bearer ${token}`;
+    }
+    const url = `https://${Domain}/sub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}&ServerIP=47.94.244.188`;
+    return post(url, requestInit).then((r) => __awaiter(void 0, void 0, void 0, function* () {
+        if (r.status !== 201) {
+            const b = r.status;
+            throw new Error(`${r.data} 错误码：${b}`);
+        }
+        const answerSdp = yield r.data;
+        const { location } = r.headers;
+        return { sdp: answerSdp, location };
+    }));
+};
 const deleteRequest = (location) => post(location, {
     method: "DELETE",
 });
@@ -147,7 +264,7 @@ class Publisher extends events.EventEmitter {
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
-            const { appID, streamID } = jose.decodeJwt(this.token);
+            const { appID, streamID } = decodeJwt(this.token);
             this.streamId = streamID;
             this.appId = appID;
             this.mediaStream = new MediaStream();
@@ -231,6 +348,98 @@ class Publisher extends events.EventEmitter {
     }
 }
 
+class Subscribe extends events.EventEmitter {
+    constructor(token) {
+        super();
+        this.audioMuted = false;
+        this.videoMuted = false;
+        const { appID, streamID } = decodeJwt(token);
+        this.streamId = streamID;
+        this.appId = appID;
+        this.token = token;
+        this.createRTCPeerConnection();
+    }
+    get state() {
+        return this.pc.connectionState;
+    }
+    createRTCPeerConnection() {
+        this.pc = new RTCPeerConnection({
+            iceServers: [],
+            iceTransportPolicy: "all",
+            bundlePolicy: "max-bundle",
+            rtcpMuxPolicy: "require",
+            // @ts-ignore
+            sdpSemantics: "unified-plan",
+        });
+        this.pc.addTransceiver('audio', { direction: 'recvonly' });
+        this.pc.addTransceiver('video', { direction: 'recvonly' });
+        this.pc.addEventListener('connectionstatechange', this.emit.bind(this.pc));
+        this.pc.addEventListener('track', (evt) => {
+            if (evt.track) {
+                if (evt.track.kind === 'audio') {
+                    this.audio = evt.track;
+                }
+                else {
+                    this.video = evt.track;
+                }
+            }
+            this.emit('track', evt.track);
+        });
+        this.subscribe();
+    }
+    subscribe() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.pc.connectionState !== 'new') {
+                throw new Error('Already subscribed.');
+            }
+            const offer = yield this.pc.createOffer();
+            yield this.pc.setLocalDescription(offer);
+            const { sdp, location } = yield pullRequest({
+                AppID: this.appId,
+                StreamID: this.streamId,
+                token: this.token,
+                SessionID: '',
+                sdp: offer.sdp,
+            });
+            yield this.pc.setRemoteDescription(new RTCSessionDescription({
+                type: "answer",
+                sdp,
+            }));
+            this.location = location;
+        });
+    }
+    unsubscribe() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.pc.connectionState === 'closed') {
+                throw new Error('Already unsubscribed.');
+            }
+            if (!this.location) {
+                throw new Error('Not in subscribing. Consider using `subscribe()` before `unsubscribe()`.');
+            }
+            yield deleteRequest(this.location);
+            this.location = undefined;
+            this.pc.close();
+        });
+    }
+    mute(muted, kind) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.location) {
+                throw new Error('Not in subscribing. Consider using `subscribe()` before `mute()`.');
+            }
+            if (kind === 'audio' || !kind) {
+                this.audioMuted = muted;
+            }
+            if (kind === 'video' || !kind) {
+                this.videoMuted = muted;
+            }
+            yield updateRequest(this.location, {
+                MuteAudio: this.audioMuted,
+                MuteVideo: this.videoMuted,
+            });
+        });
+    }
+}
+
 function usePublish(token) {
     const publisher = react.useRef(new Publisher(token)).current;
     const [audioMuted, setAudioMuted] = react.useState(publisher.audioMuted);
@@ -248,9 +457,42 @@ function usePublish(token) {
         publish,
         mute,
         unpublish,
-        getPeerConnection: () => publisher.pc
+        getPeerConnection: () => publisher.pc,
     };
+}
+function useSubscribe(Token) {
+    const [state, setState] = react.useState('new');
+    const [subscriber, setSubscriber] = react.useState();
+    const [videoTrack, setVideoTrack] = react.useState();
+    const [audioTrack, setAudioTrack] = react.useState();
+    const stop = react.useCallback(() => {
+        if (subscriber) {
+            subscriber.unsubscribe();
+        }
+    }, [subscriber]);
+    const mute = (isMute, kind) => {
+        subscriber.mute(isMute, kind);
+    };
+    const handleSubscribe = react.useCallback((track) => {
+        if (track.kind === 'video') {
+            setVideoTrack(track);
+        }
+        else {
+            setAudioTrack(track);
+        }
+    }, []);
+    const handleConnectionState = react.useCallback((peerConnectionState) => {
+        setState(peerConnectionState);
+    }, [state]);
+    react.useEffect(() => {
+        const subscribe = new Subscribe(Token);
+        subscribe.addListener('track', handleSubscribe);
+        subscribe.addListener('connectionstatechange', handleConnectionState);
+        setSubscriber(subscribe);
+    }, [Token]);
+    return { videoTrack, audioTrack, state, mute, stop };
 }
 
 exports.usePublish = usePublish;
+exports.useSubscribe = useSubscribe;
 //# sourceMappingURL=index.js.map
