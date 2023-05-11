@@ -34,7 +34,7 @@ export const pushRequest = ({
                               MuteAudio = false,
                               MuteVideo = false,
                             }: PushParameters): Promise<ResponseParams> => {
-  const url = `https://${Domain}/pub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}&ServerIP=47.94.244.188`;
+  const url = `https://${Domain}/pub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}`;
   return post(url, {
     method: "POST",
     headers: {
@@ -74,7 +74,7 @@ export const pullRequest = ({
   if (token) {
     requestInit.headers.Authorization = `Bearer ${token}`;
   }
-  const url = `https://${Domain}/sub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}&ServerIP=47.94.244.188`;
+  const url = `https://${Domain}/sub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}`;
   return post(url, requestInit).then(async (r) => {
     if (r.status !== 201) {
       const b = r.status;

@@ -60,7 +60,6 @@ export default class Subscribe extends EventEmitter {
       this.emit('track', evt.track);
     });
 
-    this.subscribe();
   }
 
   async subscribe() {

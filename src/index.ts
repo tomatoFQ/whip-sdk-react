@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Publisher from './publish';
 import Subscribe from './subscribe';
 
@@ -33,51 +33,40 @@ export function usePublish(token: string): PublishHook {
   };
 }
 
-export interface Subscriber {
-  videoTrack: MediaStreamTrack,
-  audioTrack: MediaStreamTrack,
-  state: RTCPeerConnectionState,
-  mute: Function,
-  stop: Function,
+export interface SubscribeHook {
+  audioMuted: boolean;
+  videoMuted: boolean;
+  publish: typeof Publisher.prototype.publish;
+  mute: typeof Publisher.prototype.mute;
+  unpublish: typeof Publisher.prototype.unpublish;
+  getPeerConnection: () => RTCPeerConnection;
 }
 
-export function useSubscribe(Token: string) {
-  const [state, setState] = useState<RTCPeerConnectionState>('new');
-  const [subscriber, setSubscriber] = useState<Subscribe>();
-  const [videoTrack, setVideoTrack] = useState<MediaStreamTrack>();
-  const [audioTrack, setAudioTrack] = useState<MediaStreamTrack>();
-
-  const stop = useCallback(() => {
-    if (subscriber) {
-      subscriber.unsubscribe();
-    }
-  }, [subscriber]);
-
-
-  const mute = (isMute: boolean, kind: 'video' | 'audio') => {
-    subscriber.mute(isMute, kind);
-  };
-
-  const handleSubscribe = useCallback((track: MediaStreamTrack) => {
-    if (track.kind === 'video') {
-      setVideoTrack(track)
-    } else {
-      setAudioTrack(track)
-    }
-  }, [])
-
-  const handleConnectionState = useCallback((peerConnectionState: RTCPeerConnectionState) => {
-    setState(peerConnectionState);
-  }, [state]);
+/**
+ * @return SubscribeHook
+ */
+export function useSubscribe(): SubscribeHook {
+  const subscriber = useRef<Subscribe>();
+  const [audioMuted, setAudioMuted] = useState(false);
+  const [videoMuted, setVideoMuted] = useState(false);
+  const publish = useRef(subscriber.current?.subscribe.bind(subscriber.current)).current;
+  const mute = useRef(subscriber.current?.mute.bind(subscriber.current)).current;
+  const unpublish = useRef(subscriber.current?.subscribe.bind(subscriber.current)).current;
 
   useEffect(() => {
-    const subscribe = new Subscribe(Token);
-    subscribe.addListener('track', handleSubscribe);
-    subscribe.addListener('connectionstatechange', handleConnectionState);
-    setSubscriber(subscribe);
-  }, [Token]);
+    subscriber.current = new Subscribe('');
+    subscriber.current.on('muteChanged', () => {
+      setAudioMuted(subscriber.current?.audioMuted);
+      setVideoMuted(subscriber.current?.videoMuted);
+    });
+  }, []);
 
-
-
-  return {videoTrack, audioTrack, state, mute, stop} as Subscriber;
+  return {
+    audioMuted,
+    videoMuted,
+    publish,
+    mute,
+    unpublish,
+    getPeerConnection: () => subscriber.current?.pc,
+  };
 }
