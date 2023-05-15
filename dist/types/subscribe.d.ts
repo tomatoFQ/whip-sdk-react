@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { EventEmitter } from 'events';
-export default class Subscribe extends EventEmitter {
+export default class Subscriber extends EventEmitter {
     constructor(token: string);
     pc: RTCPeerConnection;
     appId: string;

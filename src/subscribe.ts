@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import { decodeJwt } from 'jose';
 import {deleteRequest, pullRequest, updateRequest} from './request';
 
-export default class Subscribe extends EventEmitter {
+export default class Subscriber extends EventEmitter {
   constructor(token: string) {
     super();
     const { appID, streamID } = decodeJwt(token) as { appID: string, streamID: string };
@@ -57,7 +57,7 @@ export default class Subscribe extends EventEmitter {
           this.video = evt.track;
         }
       }
-      this.emit('track', evt.track);
+      this.emit('trackAdded', evt.track);
     });
 
   }
@@ -76,13 +76,14 @@ export default class Subscribe extends EventEmitter {
       SessionID: '',
       sdp: offer.sdp,
     })
+    this.location = location;
+
     await this.pc.setRemoteDescription(
       new RTCSessionDescription({
         type: "answer",
         sdp,
       }),
     );
-    this.location = location;
   }
 
   async unsubscribe() {

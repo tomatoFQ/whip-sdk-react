@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import {useState, useEffect, useRef} from 'react';
 import Publisher from './publish';
-import Subscribe from './subscribe';
+import Subscriber from './subscribe';
 
 export interface PublishHook {
   audioMuted: boolean;
@@ -18,10 +18,13 @@ export function usePublish(token: string): PublishHook {
   const mute = useRef(publisher.mute.bind(publisher)).current;
   const unpublish = useRef(publisher.unpublish.bind(publisher)).current;
 
-  publisher.on('muteChanged', () => {
-    setAudioMuted(publisher.audioMuted);
-    setVideoMuted(publisher.videoMuted);
-  });
+  useEffect(() => {
+    publisher.on('muteChanged', () => {
+      setAudioMuted(publisher.audioMuted);
+      setVideoMuted(publisher.videoMuted);
+    });
+  }, [publisher])
+
 
   return {
     audioMuted,
@@ -36,37 +39,44 @@ export function usePublish(token: string): PublishHook {
 export interface SubscribeHook {
   audioMuted: boolean;
   videoMuted: boolean;
-  publish: typeof Publisher.prototype.publish;
-  mute: typeof Publisher.prototype.mute;
-  unpublish: typeof Publisher.prototype.unpublish;
+  subscribe: () => MediaStream;
+  mute: typeof Subscriber.prototype.mute;
+  unsubscribe: typeof Subscriber.prototype.unsubscribe;
   getPeerConnection: () => RTCPeerConnection;
 }
+
 
 /**
  * @return SubscribeHook
  */
-export function useSubscribe(): SubscribeHook {
-  const subscriber = useRef<Subscribe>();
+export function useSubscribe(token: string): SubscribeHook {
+  const subscriber = useRef(new Subscriber(token)).current;
   const [audioMuted, setAudioMuted] = useState(false);
   const [videoMuted, setVideoMuted] = useState(false);
-  const publish = useRef(subscriber.current?.subscribe.bind(subscriber.current)).current;
-  const mute = useRef(subscriber.current?.mute.bind(subscriber.current)).current;
-  const unpublish = useRef(subscriber.current?.subscribe.bind(subscriber.current)).current;
+  const mute = subscriber.mute.bind(subscriber);
+  const unsubscribe = subscriber.unsubscribe.bind(subscriber);
 
+  const stream = new MediaStream();
+  const subscribe = () => {
+    subscriber.on('trackAdded', (track: MediaStreamTrack) => {
+      stream.addTrack(track);
+    });
+    subscriber.subscribe();
+    return stream;
+  }
   useEffect(() => {
-    subscriber.current = new Subscribe('');
-    subscriber.current.on('muteChanged', () => {
-      setAudioMuted(subscriber.current?.audioMuted);
-      setVideoMuted(subscriber.current?.videoMuted);
+    subscriber.on('muteChanged', () => {
+      setAudioMuted(subscriber.audioMuted);
+      setVideoMuted(subscriber.videoMuted);
     });
   }, []);
 
   return {
     audioMuted,
     videoMuted,
-    publish,
+    subscribe,
     mute,
-    unpublish,
-    getPeerConnection: () => subscriber.current?.pc,
+    unsubscribe,
+    getPeerConnection: () => subscriber.pc,
   };
 }

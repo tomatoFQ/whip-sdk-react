@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { EventEmitter } from 'events';
 import post from 'axios';
 
@@ -190,7 +190,7 @@ function v4(options, buf, offset) {
 const Domain = 'test-openrtc.eaydu.com';
 // 推流请求
 const pushRequest = ({ AppID, StreamID, token, SessionID = v4(), sdp, MuteAudio = false, MuteVideo = false, }) => {
-    const url = `https://${Domain}/pub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}&ServerIP=47.94.244.188`;
+    const url = `https://${Domain}/pub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}`;
     return post(url, {
         method: "POST",
         headers: {
@@ -220,7 +220,7 @@ const pullRequest = ({ AppID, StreamID, token, SessionID = v4(), sdp, MuteAudio 
     if (token) {
         requestInit.headers.Authorization = `Bearer ${token}`;
     }
-    const url = `https://${Domain}/sub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}&ServerIP=47.94.244.188`;
+    const url = `https://${Domain}/sub/${AppID}/${StreamID}?SessionID=${SessionID}&MuteAudio=${MuteAudio}&MuteVideo=${MuteVideo}`;
     return post(url, requestInit).then((r) => __awaiter(void 0, void 0, void 0, function* () {
         if (r.status !== 201) {
             const b = r.status;
@@ -346,7 +346,7 @@ class Publisher extends EventEmitter {
     }
 }
 
-class Subscribe extends EventEmitter {
+class Subscriber extends EventEmitter {
     constructor(token) {
         super();
         this.audioMuted = false;
@@ -381,9 +381,8 @@ class Subscribe extends EventEmitter {
                     this.video = evt.track;
                 }
             }
-            this.emit('track', evt.track);
+            this.emit('trackAdded', evt.track);
         });
-        this.subscribe();
     }
     subscribe() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -399,11 +398,11 @@ class Subscribe extends EventEmitter {
                 SessionID: '',
                 sdp: offer.sdp,
             });
+            this.location = location;
             yield this.pc.setRemoteDescription(new RTCSessionDescription({
                 type: "answer",
                 sdp,
             }));
-            this.location = location;
         });
     }
     unsubscribe() {
@@ -445,10 +444,12 @@ function usePublish(token) {
     const publish = useRef(publisher.publish.bind(publisher)).current;
     const mute = useRef(publisher.mute.bind(publisher)).current;
     const unpublish = useRef(publisher.unpublish.bind(publisher)).current;
-    publisher.on('muteChanged', () => {
-        setAudioMuted(publisher.audioMuted);
-        setVideoMuted(publisher.videoMuted);
-    });
+    useEffect(() => {
+        publisher.on('muteChanged', () => {
+            setAudioMuted(publisher.audioMuted);
+            setVideoMuted(publisher.videoMuted);
+        });
+    }, [publisher]);
     return {
         audioMuted,
         videoMuted,
@@ -458,37 +459,37 @@ function usePublish(token) {
         getPeerConnection: () => publisher.pc,
     };
 }
-function useSubscribe(Token) {
-    const [state, setState] = useState('new');
-    const [subscriber, setSubscriber] = useState();
-    const [videoTrack, setVideoTrack] = useState();
-    const [audioTrack, setAudioTrack] = useState();
-    const stop = useCallback(() => {
-        if (subscriber) {
-            subscriber.unsubscribe();
-        }
-    }, [subscriber]);
-    const mute = (isMute, kind) => {
-        subscriber.mute(isMute, kind);
+/**
+ * @return SubscribeHook
+ */
+function useSubscribe(token) {
+    const subscriber = useRef(new Subscriber(token)).current;
+    const [audioMuted, setAudioMuted] = useState(false);
+    const [videoMuted, setVideoMuted] = useState(false);
+    const mute = subscriber.mute.bind(subscriber);
+    const unsubscribe = subscriber.unsubscribe.bind(subscriber);
+    const stream = new MediaStream();
+    const subscribe = () => {
+        subscriber.on('trackAdded', (track) => {
+            stream.addTrack(track);
+        });
+        subscriber.subscribe();
+        return stream;
     };
-    const handleSubscribe = useCallback((track) => {
-        if (track.kind === 'video') {
-            setVideoTrack(track);
-        }
-        else {
-            setAudioTrack(track);
-        }
-    }, []);
-    const handleConnectionState = useCallback((peerConnectionState) => {
-        setState(peerConnectionState);
-    }, [state]);
     useEffect(() => {
-        const subscribe = new Subscribe(Token);
-        subscribe.addListener('track', handleSubscribe);
-        subscribe.addListener('connectionstatechange', handleConnectionState);
-        setSubscriber(subscribe);
-    }, [Token]);
-    return { videoTrack, audioTrack, state, mute, stop };
+        subscriber.on('muteChanged', () => {
+            setAudioMuted(subscriber.audioMuted);
+            setVideoMuted(subscriber.videoMuted);
+        });
+    }, []);
+    return {
+        audioMuted,
+        videoMuted,
+        subscribe,
+        mute,
+        unsubscribe,
+        getPeerConnection: () => subscriber.pc,
+    };
 }
 
 export { usePublish, useSubscribe };

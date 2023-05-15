@@ -1,4 +1,5 @@
 import Publisher from './publish';
+import Subscriber from './subscribe';
 export interface PublishHook {
     audioMuted: boolean;
     videoMuted: boolean;
@@ -8,11 +9,15 @@ export interface PublishHook {
     getPeerConnection: () => RTCPeerConnection;
 }
 export declare function usePublish(token: string): PublishHook;
-export interface Subscriber {
-    videoTrack: MediaStreamTrack;
-    audioTrack: MediaStreamTrack;
-    state: RTCPeerConnectionState;
-    mute: Function;
-    stop: Function;
+export interface SubscribeHook {
+    audioMuted: boolean;
+    videoMuted: boolean;
+    subscribe: () => MediaStream;
+    mute: typeof Subscriber.prototype.mute;
+    unsubscribe: typeof Subscriber.prototype.unsubscribe;
+    getPeerConnection: () => RTCPeerConnection;
 }
-export declare function useSubscribe(Token: string): Subscriber;
+/**
+ * @return SubscribeHook
+ */
+export declare function useSubscribe(token: string): SubscribeHook;
